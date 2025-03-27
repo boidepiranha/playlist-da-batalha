@@ -7,7 +7,7 @@ EMAIL = st.secrets["firebase"]["email"]
 SENHA = st.secrets["firebase"]["senha"]
 API_KEY = st.secrets["firebase"]["apiKey"]
 
-playlist_id = "PLCcM9n2mu2uHA6fuInzsrEOhiTq7Dsd97"
+playlist_id = "PLCcM9n2mu2uEy2A4_7yk0mq17DOCx_yBR"
 
 @st.cache_data
 def autenticar():
@@ -25,24 +25,57 @@ def sinalizar_batalha(token):
 html_code = f"""
 <div id="player"></div>
 
-<script src="https://www.youtube.com/iframe_api"></script>
 <script>
-  let player;
+  var tag = document.createElement('script');
+  tag.src = "https://www.youtube.com/iframe_api";
+  var firstScriptTag = document.getElementsByTagName('script')[0];
+  firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+  var player;
   function onYouTubeIframeAPIReady() {{
     player = new YT.Player('player', {{
       height: '394',
       width: '700',
       playerVars: {{
         listType: 'playlist',
-        list: '{playlist_id}'
+        list: '{playlist_id}',
+        autoplay: 1,
+        controls: 1
       }},
       events: {{
+        'onReady': onPlayerReady,
         'onStateChange': onPlayerStateChange
       }}
     }});
   }}
 
+  function onPlayerReady(event) {{
+    console.log("🎬 Player pronto");
+  }}
+
   function onPlayerStateChange(event) {{
+    // Detecta quando um novo vídeo começa a tocar
+    if (event.data === YT.PlayerState.PLAYING) {{
+      var index = player.getPlaylistIndex();
+      console.log("🎵 Tocando vídeo índice:", index);
+      
+      // Se for o vídeo de índice 2 (terceiro vídeo), notifica o Firebase
+      if (index === 2) {{
+        console.log("🚨 Começou o vídeo da contagem regressiva!");
+
+        // Notifica o Firebase
+        fetch("{FIREBASE_URL}/batalha_estado.json", {{
+          method: "PATCH",
+          headers: {{
+            "Content-Type": "application/json"
+          }},
+          body: JSON.stringify({{ finalizando: true }})
+        }}).then(r => console.log("✅ Firebase atualizado"))
+          .catch(e => console.error("❌ Erro no envio para Firebase", e));
+      }}
+    }}
+    
+    // Mantém a função original para recarregar quando a playlist terminar
     if (event.data === YT.PlayerState.ENDED) {{
       console.log("🎬 Playlist terminou. Recarregando...");
       setTimeout(() => location.reload(), 2000); // Espera 2 segundos e recarrega
