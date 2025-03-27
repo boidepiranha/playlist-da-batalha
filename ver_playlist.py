@@ -1,6 +1,22 @@
 import streamlit as st
 import streamlit.components.v1 as components
 import requests
+import pyrebase
+
+# Lê as credenciais do Firebase do arquivo .streamlit/secrets.toml
+firebase_config = {
+    "apiKey": st.secrets["firebase"]["apiKey"],
+    "authDomain": st.secrets["firebase"]["authDomain"],
+    "databaseURL": st.secrets["firebase"]["databaseURL"],
+    "storageBucket": st.secrets["firebase"]["storageBucket"]
+}
+
+firebase = pyrebase.initialize_app(firebase_config)
+auth = firebase.auth()
+
+# Lê email/senha de forma segura
+email = st.secrets["firebase"]["email"]
+senha = st.secrets["firebase"]["senha"]
 
 playlist_id = "PLCcM9n2mu2uHA6fuInzsrEOhiTq7Dsd97"
 
@@ -47,9 +63,10 @@ components.html(html_code, height=420)
 
 # Botão para iniciar nova batalha
 if st.button("🔥 Iniciar nova batalha"):
-    if sinalizar_batalha():
-        st.success("Batalha sinalizada com sucesso!")
-    else:
-        st.error("Erro ao sinalizar batalha.")
-
-
+    try:
+        user = auth.sign_in_with_email_and_password(email, senha)
+        db = firebase.database()
+        db.child("batalha_estado").update({"nova_batalha": True}, user['idToken'])
+        st.success("✅ Batalha sinalizada com autenticação!")
+    except Exception as e:
+        st.error(f"❌ Erro ao sinalizar batalha: {e}")
