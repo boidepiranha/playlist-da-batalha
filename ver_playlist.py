@@ -7,7 +7,7 @@ EMAIL = st.secrets["firebase"]["email"]
 SENHA = st.secrets["firebase"]["senha"]
 API_KEY = st.secrets["firebase"]["apiKey"]
 
-playlist_id = "PLCcM9n2mu2uEy2A4_7yk0mq17DOCx_yBR"
+playlist_id = "PLCcM9n2mu2uHA6fuInzsrEOhiTq7Dsd97"
 
 @st.cache_data
 def autenticar():
