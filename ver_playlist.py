@@ -28,6 +28,16 @@ def autenticar():
             st.write(f"Resposta: {e.response.text}")
         raise e
 
+def buscar_status_atual(token):
+    url = f"{FIREBASE_URL}/status_atual.json?auth={token}"
+    try:
+        res = requests.get(url)
+        res.raise_for_status()
+        return res.json()
+    except Exception as e:
+        st.sidebar.write(f"Erro ao buscar status atual: {e}")
+        return None
+
 def sinalizar_batalha(token):
     url = f"{FIREBASE_URL}/batalha_estado.json?auth={token}"
     st.write(f"Enviando requisição para: {url[:50]}...")
@@ -148,6 +158,18 @@ if st.button("🔥 Iniciar nova batalha"):
                 st.success("✅ Batalha sinalizada com sucesso!")
             else:
                 st.error("❌ Falha ao atualizar no Firebase.")
+            status = buscar_status_atual(auth_token)
+            if status:
+                st.sidebar.markdown("### 🎶 Now Playing")
+                st.sidebar.write(f"**Arena:** {status.get('arena', ['?', '?'])[0]} vs {status.get('arena', ['?', '?'])[1]}")
+                st.sidebar.write(f"**Reserva:** {status.get('reserva', '?')}")
+                st.sidebar.write(f"**Vencedora anterior:** {status.get('vencedora_ultima_batalha', '?')}")
+                st.sidebar.write("**Vídeos atuais:**")
+                for v in status.get("videos_playlist", []):
+                    st.sidebar.markdown(f"- [{v['title']}](https://youtu.be/{v['videoId']})")
+                st.sidebar.caption(f"🕒 Última batalha: {status.get('timestamp', '---')}")
+            else:
+                st.sidebar.warning("Não foi possível carregar o status atual.")            
         else:
             st.write("Obtendo novo token")
             token = autenticar()
