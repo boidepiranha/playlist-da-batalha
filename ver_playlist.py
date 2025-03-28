@@ -69,7 +69,7 @@ html_code = f"""
           headers: {{
             "Content-Type": "application/json"
           }},
-          body: JSON.stringify({{ finalizando: true }})
+          body: JSON.stringify({{ nova_batalha: true }})
         }}).then(r => console.log("✅ Firebase atualizado"))
           .catch(e => console.error("❌ Erro no envio para Firebase", e));
       }}
