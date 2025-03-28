@@ -21,11 +21,20 @@ def sinalizar_batalha(token):
     res = requests.patch(url, json={"nova_batalha": True})
     return res.status_code == 200
 
+# Obter token de autenticação no início
+try:
+    auth_token = autenticar()
+except Exception as e:
+    st.error(f"Erro ao autenticar: {e}")
+    auth_token = ""
 
 html_code = f"""
 <div id="player"></div>
 
 <script>
+  // Token de autenticação Firebase
+  const authToken = "{auth_token}";
+  
   var tag = document.createElement('script');
   tag.src = "https://www.youtube.com/iframe_api";
   var firstScriptTag = document.getElementsByTagName('script')[0];
@@ -63,15 +72,21 @@ html_code = f"""
       if (index === 2) {{
         console.log("🚨 Começou o vídeo da contagem regressiva!");
 
-        // Notifica o Firebase
-        fetch("{FIREBASE_URL}/batalha_estado.json", {{
+        // Notifica o Firebase com autenticação
+        fetch("{FIREBASE_URL}/batalha_estado.json?auth=" + authToken, {{
           method: "PATCH",
           headers: {{
             "Content-Type": "application/json"
           }},
           body: JSON.stringify({{ nova_batalha: true }})
-        }}).then(r => console.log("✅ Firebase atualizado"))
-          .catch(e => console.error("❌ Erro no envio para Firebase", e));
+        }}).then(r => {{
+          if (r.ok) {{
+            console.log("✅ Firebase atualizado com sucesso");
+          }} else {{
+            console.error("❌ Erro ao atualizar Firebase:", r.status);
+          }}
+        }})
+        .catch(e => console.error("❌ Erro no envio para Firebase", e));
       }}
     }}
     
@@ -91,11 +106,19 @@ components.html(html_code, height=420)
 # Botão para iniciar nova batalha
 if st.button("🔥 Iniciar nova batalha"):
     try:
-        token = autenticar()
-        if sinalizar_batalha(token):
-            st.success("✅ Batalha sinalizada com sucesso!")
+        if auth_token:
+            if sinalizar_batalha(auth_token):
+                st.success("✅ Batalha sinalizada com sucesso!")
+            else:
+                st.error("❌ Falha ao atualizar no Firebase.")
         else:
-            st.error("❌ Falha ao atualizar no Firebase.")
+            token = autenticar()
+            if sinalizar_batalha(token):
+                st.success("✅ Batalha sinalizada com sucesso!")
+                # Recarrega a página para atualizar o token no JavaScript
+                st.rerun()
+            else:
+                st.error("❌ Falha ao atualizar no Firebase.")
     except Exception as e:
         st.error(f"Erro: {e}")
 
